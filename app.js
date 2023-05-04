@@ -1,13 +1,43 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
+const mongoose = require('mongoose');
+const config = require('config');
+const i18n = require('i18n');
+const { expressjwt } = require('express-jwt');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
+const directorsRouter = require('./routes/directors');
+const moviesRouter = require('./routes/movies');
+const membersRouter = require('./routes/members');
 
-var app = express();
+const jwtKey = config.get("secret.key");
+
+
+// mongodb://<dbUser>?:<dbPass>?@<direction>:<port>/<dbName>
+const uri = config.get("dbChain");
+mongoose.connect(uri);
+
+const db = mongoose.connection;
+
+const app = express();
+
+db.on('open', ()=> {
+  console.log("Conexion ok");
+});
+
+db.on('error', ()=> {
+  console.log("No se ha podido iniciar la conexion");
+});
+
+i18n.configure({
+  locales:['es', 'en'],
+  cookie: 'language',
+  directory: `${__dirname}/locales`
+});
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -18,9 +48,15 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(i18n.init);
 
+app.use(expressjwt({secret:jwtKey, algorithms:['HS256']})
+   .unless({path:["/login"]}));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+app.use('/directors', directorsRouter);
+app.use('/movies', moviesRouter);
+app.use('/members', membersRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
