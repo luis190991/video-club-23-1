@@ -6,6 +6,7 @@ const logger = require('morgan');
 const mongoose = require('mongoose');
 const config = require('config');
 const i18n = require('i18n');
+const cors = require('cors');
 const { expressjwt } = require('express-jwt');
 
 const indexRouter = require('./routes/index');
@@ -49,14 +50,17 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(i18n.init);
-
-app.use(expressjwt({secret:jwtKey, algorithms:['HS256']})
-   .unless({path:["/login"]}));
+app.use(cors({
+  origin: "http://localhost:8080"
+}));
+//app.use(expressjwt({secret:jwtKey, algorithms:['HS256']})
+//   .unless({path:["/login"]}));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/directors', directorsRouter);
 app.use('/movies', moviesRouter);
 app.use('/members', membersRouter);
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
